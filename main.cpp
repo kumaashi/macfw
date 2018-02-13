@@ -38,26 +38,33 @@ struct Graphics {
 	};
 
 	struct Instance : public Data {
-		//todo array
 		float pos[4] = {0, 0, 0, 1};
 		float scale[4] = {1, 1, 1, 1};
 		float rot[4] = {0, 0, 0, 0};
-		void SetPos(float x, float y, float z) { pos[0] = x; pos[1] = y; pos[2] = z; }
-		void SetScale(float x, float y, float z) { scale[0] = x; scale[1] = y; scale[2] = z; }
-		void SetRot(float x, float y, float z) { rot[0] = x; rot[1] = y; rot[2] = z; }
-		void GetPos(float *x) {
-			
-		}
-		void GetScale(float *x) {
-		}
-		void GetRot(float *x) {
-		}
 		Instance(string name) {
 			SetName(name);
 			SetType(Data::TYPE_INSTANCE);
 		}
 		~Instance() {
 			printf("%s\n", __func__);
+		}
+		void SetPos(float x, float y, float z) { pos[0] = x; pos[1] = y; pos[2] = z; }
+		void SetScale(float x, float y, float z) { scale[0] = x; scale[1] = y; scale[2] = z; }
+		void SetRot(float x, float y, float z) { rot[0] = x; rot[1] = y; rot[2] = z; }
+		void GetPos(float *x) {
+			for(int i = 0; i < 3; i++) {
+				x[i] = pos[i];
+			}
+		}
+		void GetScale(float *x) {
+			for(int i = 0; i < 3; i++) {
+				x[i] = scale[i];
+			}
+		}
+		void GetRot(float *x) {
+			for(int i = 0; i < 3; i++) {
+				x[i] = rot[i];
+			}
 		}
 	};
 
