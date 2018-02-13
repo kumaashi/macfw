@@ -27,7 +27,6 @@ struct Graphics {
 	};
 	map<string, Data *> vMapData;
 
-
 	struct State : public Data {
 		State(string name) {
 			SetName(name);
@@ -69,13 +68,15 @@ struct Graphics {
 		~Instance() { printf("%s\n", __func__); }
 		void SetVertex(Vertex *v) { vertex = v; }
 		Vertex *GetVertex() { return vertex; }
-		void SetState(Vertex *v) { vertex = v; }
-		State *GetState() { return vertex; }
+		void SetState(State *v) { state = v; }
+		State *GetState() { return state; }
 		bool GetAlive() { return isAlive; }
 		void SetAlive(bool value) { isAlive = value; }
+
 		void SetPos(float x, float y, float z) { pos[0] = x; pos[1] = y; pos[2] = z; }
 		void SetScale(float x, float y, float z) { scale[0] = x; scale[1] = y; scale[2] = z; }
 		void SetRot(float x, float y, float z) { rot[0] = x; rot[1] = y; rot[2] = z; }
+
 		void GetPos(float *x) { for(int i = 0; i < 3; i++) { x[i] = pos[i]; } }
 		void GetScale(float *x) { for(int i = 0; i < 3; i++) { x[i] = scale[i]; } }
 		void GetRot(float *x) { for(int i = 0; i < 3; i++) { x[i] = rot[i]; } }
@@ -87,6 +88,11 @@ struct Graphics {
 		} rect;
 		float color[4];
 		vector<Instance *> vMapInstance;
+    void GetInstance(vector<Instance *> &dest) {
+      for(auto &x : vMapInstance) {
+        dest.push_back(x);
+      }
+    }
 		void AddInstance(Instance *instance) {
 			vMapInstance.push_back(instance);
 		}
@@ -108,24 +114,21 @@ struct Graphics {
 			color[3] = a;
 		}
 		void GetClearColor(float *buf) {
-			buf[0] = color[0];
-			buf[1] = color[1];
-			buf[2] = color[2];
-			buf[3] = color[3];
+			for(int i = 0 ; i < 4 ; i++) {
+				buf[i] = color[i];
+			}
 		}
 		Rect GetViewport() {
 			return rect;
 		}
 	};
-	View *CreateView(string name, int w, int h) {
-		if(vMapData[name] == vMapData.end()) return nullptr;
-		auto v = new View(name, w, h);
+	View *CreateView(string name, int x, int y, int w, int h) {
+		auto v = new View(name, x, y, w, h);
 		vMapData[name] = v;
 		return v;
 	}
 
 	Vertex *CreateVertex(string name, void *data = 0, size_t size = 0) {
-		if(vMapData[name] == vMapData.end()) return nullptr;
 		auto v = new Vertex(name);
 		if(data) {
 			v->SetData(data, size);
@@ -135,14 +138,12 @@ struct Graphics {
 	}
 
 	State *CreateState(string name) {
-		if(vMapData[name] == vMapData.end()) return nullptr;
 		auto v = new State(name);
 		vMapData[name] = v;
 		return v;
 	}
 
 	Instance *CreateInstance(string name) {
-		if(vMapData[name] == vMapData.end()) return nullptr;
 		auto v = new Instance(name);
 		vMapData[name] = v;
 		return v;
@@ -152,11 +153,11 @@ struct Graphics {
 		for(auto & pair : vMapData) {
 			auto data = pair.second;
 			auto type = data->GetType();
-			if(type == TYPE_NONE) {}
-			if(type == TYPE_VIEW) {}
-			if(type == TYPE_VERTEX) {}
-			if(type == TYPE_STATE) {} 
-			if(type == TYPE_INSTANCE) {}
+			if(type == Data::TYPE_NONE) {}
+			if(type == Data::TYPE_VIEW) {}
+			if(type == Data::TYPE_VERTEX) {}
+			if(type == Data::TYPE_STATE) {} 
+			if(type == Data::TYPE_INSTANCE) {}
 		}
 	}
 
@@ -207,7 +208,7 @@ int main(int argc, char *argv[]) {
 	SDL_SetVideoMode(Width, Height, 32, SDL_OPENGL);
 	SDL_Event event;
 	Graphics graphics;
-	auto view0 = graphics.CreateView("main", Width, Height);
+	auto view0 = graphics.CreateView("main", 0, 0, Width, Height);
 	view0->SetClearColor(0, 0, 1, 1);
 	bool isDone = false;
 	while(!isDone) {
