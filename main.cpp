@@ -15,7 +15,8 @@ struct Graphics {
 			TYPE_NONE = 0,
 			TYPE_VIEW,
 			TYPE_VERTEX,
-			TYPE_SHADER,
+			TYPE_STATE,
+			TYPE_INSTANCE,
 		};
 		int type = TYPE_NONE;
 		string name;
@@ -26,9 +27,44 @@ struct Graphics {
 	};
 	map<string, Data *> vMapData;
 
+	struct State : public Data {
+		State(string name) {
+			SetName(name);
+			SetType(Data::TYPE_STATE);
+		}
+		~State() {
+			printf("%s\n", __func__);
+		}
+	};
+
+	struct Instance : public Data {
+		//todo array
+		float pos[4] = {0, 0, 0, 1};
+		float scale[4] = {1, 1, 1, 1};
+		float rot[4] = {0, 0, 0, 0};
+		void SetPos(float x, float y, float z) { pos[0] = x; pos[1] = y; pos[2] = z; }
+		void SetScale(float x, float y, float z) { scale[0] = x; scale[1] = y; scale[2] = z; }
+		void SetRot(float x, float y, float z) { rot[0] = x; rot[1] = y; rot[2] = z; }
+		void GetPos(float *x) {
+			
+		}
+		void GetScale(float *x) {
+		}
+		void GetRot(float *x) {
+		}
+		Instance(string name) {
+			SetName(name);
+			SetType(Data::TYPE_INSTANCE);
+		}
+		~Instance() {
+			printf("%s\n", __func__);
+		}
+	};
+
 	struct View : public Data {
 		int width, height;
 		float color[4];
+		map<string, Instance> vMapInstance;
 		View(string name, int w, int h) {
 			SetName(name);
 			SetType(Data::TYPE_VIEW);
@@ -36,7 +72,7 @@ struct Graphics {
 			height = h;
 		}
 		~View() {
-			printf("%s", __func__);
+			printf("%s\n", __func__);
 		}
 		void SetClearColor(float r, float g, float b, float a) {
 			color[0] = r;
@@ -61,7 +97,7 @@ struct Graphics {
 			SetType(Data::TYPE_VERTEX);
 		}
 		~Vertex() {
-			printf("%s", __func__);
+			printf("%s\n", __func__);
 		}
 		void SetData(void *src, size_t size) {
 			vbuf.resize(size);
@@ -70,7 +106,6 @@ struct Graphics {
 		void * GetData() { return vbuf.data(); }
 		size_t GetSize() { return vbuf.size(); }
 	};
-
 	View *CreateView(string name, int w, int h) {
 		auto v = new View(name, w, h);
 		vMapData[name] = v;
@@ -86,10 +121,27 @@ struct Graphics {
 		return v;
 	}
 
+	State *CreateState(string name) {
+		auto v = new State(name);
+		vMapData[name] = v;
+		return v;
+	}
+
+	Instance *CreateInstance(string name) {
+		auto v = new Instance(name);
+		vMapData[name] = v;
+		return v;
+	}
+
 	void Update() {
-		for(auto &pair : vMapData) {
-			auto data = pair.data;
+		for(auto & pair : vMapData) {
+			auto data = pair.second;
 			auto type = data->GetType();
+			if(type == TYPE_NONE) {}
+			if(type == TYPE_VIEW) {}
+			if(type == TYPE_VERTEX) {}
+			if(type == TYPE_STATE) {} 
+			if(type == TYPE_INSTANCE) {}
 		}
 	}
 
@@ -101,9 +153,8 @@ struct Graphics {
 			glViewport(0, 0, view->GetWidth(), view->GetHeight());
 			glClearColor( color[0], color[1], color[2], color[3]);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			printf("clear");
 		} else {
-			printf("failed find view=%s", name.c_str());
+			printf("failed find view=%s\n", name.c_str());
 		}
 	}
 
