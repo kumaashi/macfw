@@ -9,8 +9,21 @@
 
 using namespace std; //wahaha
 
+#ifdef _WIN32
+
+FILE _iob[] = {*stdin, *stdout, *stderr};
+
+extern "C" FILE * __cdecl __imp___iob_func(void)
+{
+    return _iob;
+}
+
+#endif
+
 struct Graphics {
 	struct Data {
+		Data() {}
+		virtual ~Data() {}
 		enum {
 			TYPE_NONE = 0,
 			TYPE_VIEW,
@@ -20,14 +33,15 @@ struct Graphics {
 		};
 		int type = TYPE_NONE;
 		string name;
-		string GetName() { return name; }
-		int GetType() { return type; }
-		void SetName(string n) { name = n; }
-		void SetType(int n) { type = n; }
+		virtual string GetName() { return name; }
+		virtual int GetType() { return type; }
+		virtual void SetName(string n) { name = n; }
+		virtual void SetType(int n) { type = n; }
 	};
 	map<string, Data *> vMapData;
 
 	struct State : public Data {
+		uint64_t bits = 0x0000000000000000;
 		State(string name) {
 			SetName(name);
 			SetType(Data::TYPE_STATE);
@@ -87,14 +101,14 @@ struct Graphics {
 			int x, y, w, h;
 		} rect;
 		float color[4];
-		vector<Instance *> vMapInstance;
-    void GetInstance(vector<Instance *> &dest) {
-      for(auto &x : vMapInstance) {
-        dest.push_back(x);
-      }
-    }
+		map<string, Instance *> vMapInstance;
+		void GetInstance(vector<Instance *> &dest) {
+			for(auto &x : vMapInstance) {
+				dest.push_back(x.second);
+			}
+		}
 		void AddInstance(Instance *instance) {
-			vMapInstance.push_back(instance);
+			vMapInstance[instance->GetName()] = instance;
 		}
 		View(string name, int x, int y, int w, int h) {
 			SetName(name);
@@ -123,12 +137,20 @@ struct Graphics {
 		}
 	};
 	View *CreateView(string name, int x, int y, int w, int h) {
+		auto cache = vMapData.find(name);
+		if(cache != vMapData.end()) {
+			ReleaseData(cache->second);
+		}
 		auto v = new View(name, x, y, w, h);
 		vMapData[name] = v;
 		return v;
 	}
 
 	Vertex *CreateVertex(string name, void *data = 0, size_t size = 0) {
+		auto cache = vMapData.find(name);
+		if(cache != vMapData.end()) {
+			ReleaseData(cache->second);
+		}
 		auto v = new Vertex(name);
 		if(data) {
 			v->SetData(data, size);
@@ -138,12 +160,21 @@ struct Graphics {
 	}
 
 	State *CreateState(string name) {
+		auto cache = vMapData.find(name);
+		if(cache != vMapData.end()) {
+			ReleaseData(cache->second);
+		}
 		auto v = new State(name);
 		vMapData[name] = v;
 		return v;
+		return nullptr;
 	}
 
 	Instance *CreateInstance(string name) {
+		auto cache = vMapData.find(name);
+		if(cache != vMapData.end()) {
+			ReleaseData(cache->second);
+		}
 		auto v = new Instance(name);
 		vMapData[name] = v;
 		return v;
@@ -177,15 +208,21 @@ struct Graphics {
 		}
 	}
 
+	void ReleaseData(Data *data) {
+		delete data;
+	}
+
 	void ReleaseDatas() {
+		printf("%s vMapData.size()=%d\n", __func__, vMapData.size());
 		for(auto &x : vMapData) {
-			delete x.second;
+			ReleaseData(x.second);
 		}
 	}
 
 	Graphics() { }
 
 	~Graphics() {
+		printf("%s\n", __func__);
 		ReleaseDatas();
 	} 
 };
@@ -207,21 +244,26 @@ int main(int argc, char *argv[]) {
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1 );
 	SDL_SetVideoMode(Width, Height, 32, SDL_OPENGL);
 	SDL_Event event;
-	Graphics graphics;
-	auto view0 = graphics.CreateView("main", 0, 0, Width, Height);
-	view0->SetClearColor(0, 0, 1, 1);
-	bool isDone = false;
-	while(!isDone) {
-		printf("update");
-		graphics.SubmitView(view0->GetName());
-		SDL_GL_SwapBuffers();
-		while(SDL_PollEvent(&event)) {
-			if(event.type & SDL_KEYDOWN) {
-				isDone = true;
+	
+	{
+		Graphics graphics;
+		auto view0 = graphics.CreateView("main", 0, 0, Width, Height);
+		view0->SetClearColor(0, 0, 1, 1);
+		
+		bool isDone = false;
+		while(!isDone) {
+			while(SDL_PollEvent(&event)) {
+				if(event.type & SDL_KEYDOWN) {
+					isDone = true;
+				}
 			}
+			
+			graphics.SubmitView(view0->GetName());
+			SDL_GL_SwapBuffers();
 		}
+		printf("ç≤ÅXñÿê≥é˜\n");
 	}
-
+		printf("ç≤ÅXñÿê≥é˜ OK \n");
 	SDL_Quit();
 	return 0;
 }
